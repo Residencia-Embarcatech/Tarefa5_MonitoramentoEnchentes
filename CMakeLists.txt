@@ -49,6 +49,8 @@ pico_set_program_version(Tarefa5_MonitoramentoEnchentesFreeRTOS "0.1")
 pico_enable_stdio_uart(Tarefa5_MonitoramentoEnchentesFreeRTOS 1)
 pico_enable_stdio_usb(Tarefa5_MonitoramentoEnchentesFreeRTOS 1)
 
+pico_generate_pio_header(Tarefa5_MonitoramentoEnchentesFreeRTOS ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
+
 # Add the standard library to the build
 target_link_libraries(Tarefa5_MonitoramentoEnchentesFreeRTOS
         pico_stdlib 
@@ -57,6 +59,7 @@ target_link_libraries(Tarefa5_MonitoramentoEnchentesFreeRTOS
         hardware_adc
         hardware_clocks
         hardware_uart
+        hardware_pio
         pico_time
         FreeRTOS-Kernel 
         FreeRTOS-Kernel-Heap4)
