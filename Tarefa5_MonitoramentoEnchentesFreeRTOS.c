@@ -33,6 +33,9 @@
 #define I2C_SCL 15 
 #define address 0x3C 
 
+#define MATRIX 7 //Pino GPIO da matriz de LEDS
+#define RED_LED 13 //Pino GPIO do Led Vermelho
+
 QueueHandle_t xQueueJoystickData; //Definição da Fila para Valores do Joystick
 QueueHandle_t xQueueModeData; //Definição da Fila para Valores do Modo de Operação
 
@@ -92,8 +95,8 @@ void vReadJoystickValuesTask()
 
         //Envia os dados para a fila
         xQueueSend(xQueueJoystickData, &joystick, 0);
-        //Gera um delay de 1s
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        //Gera um delay de 0.5s
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -137,14 +140,10 @@ void vMapStatus()
             //Salva na pilha 3 vezes para que possa ser acessado corretamente por cada task de periféricos
             for (int i = 0; i < 3; i++) xQueueSend(xQueueModeData, &mode, 0);
             
-            vTaskDelay(pdMS_TO_TICKS(1500)); //Espera 1.5s
+            vTaskDelay(pdMS_TO_TICKS(500)); //Espera 0.5s
         }//End: queueReceive
     }
 }
-
-/**
- * @brief Task que exibe os alertas visuais (na matriz de LEDS e no LED RGB)
- */
 
 /**
  * @brief Task que exibe os resultados de leitura no display SSD1306
@@ -210,6 +209,83 @@ void vRealTimeInfo()
     }
 }
 
+/**
+ * @brief Função auxiliar para task vVisualAlert()
+ */
+uint32_t matrix_rgb(double r, double g, double b)
+{
+    unsigned char R = (unsigned char)(r * 255);
+    unsigned char G = (unsigned char)(g * 255);
+    unsigned char B = (unsigned char)(b * 255);
+
+    return (G << 24) | (R << 16) | (B << 8);
+}
+
+/**
+ * @brief Task que exibe os alertas visuais (na matriz de LEDS e no LED RGB)
+ */
+void vVisualAlert()
+{
+    /**
+     * Inicialização da PIO para utilizar a matriz de LEDS
+     */
+    PIO pio = pio0;
+    uint offset = pio_add_program(pio, &pio_matrix_program);
+    uint sm = pio_claim_unused_sm(pio, true);
+    pio_matrix_program_init(pio, sm, offset, MATRIX);
+    
+    /**
+     * Inicializa o LED RGB vermelho  
+     */
+    gpio_init(RED_LED);
+    gpio_set_dir(RED_LED, GPIO_OUT);
+
+    OperationMode_data_t mode;
+    uint32_t led_value;
+
+    //Array com Símbolo a ser desenhado na matriz
+    const int frame[25] = {
+        0,0,1,0,0,
+        0,0,1,0,0,
+        0,0,1,0,0,
+        0,0,0,0,0,
+        0,0,1,0,0
+    };
+    
+    while (true)
+    {
+        if (xQueueReceive(xQueueModeData, &mode, portMAX_DELAY) == pdTRUE)
+        {
+            if (mode.alertMode)
+            {
+                //Exibe o símbolo ! para indicar alerta visual
+                for (int i = 0; i < 25; i++)
+                {
+                    if (frame[24-i] == 1) led_value = matrix_rgb(1.0,0.0,0.0);
+                    else led_value = matrix_rgb(0.0,0.0,0.0);
+
+                    pio_sm_put_blocking(pio, sm, led_value);
+                }
+
+                //Liga o LED RGB Vermelho
+                gpio_put(RED_LED, true);
+            }else {
+                //Mantém a matriz de Leds apagada caso não esteja no modo de alerta
+                for (int i = 0; i < 25; i++) {
+                    led_value = matrix_rgb(0.0,0.0,0.0);
+                    pio_sm_put_blocking(pio, sm, led_value);
+                }
+
+                //Desliga o LED RGB Vermelho
+                gpio_put(RED_LED, false);
+            }
+
+            vTaskDelay(pdTICKS_TO_MS(500)); //Atualiza a cada 0.5s
+        }//End: queueReceive
+    }
+    
+}
+
 int main()
 {
     stdio_init_all();
@@ -222,6 +298,7 @@ int main()
     xTaskCreate(vReadJoystickValuesTask, "Read Joystick Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(vMapStatus, "Define Status Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(vRealTimeInfo, "Display Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(vVisualAlert, "LEDS Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     vTaskStartScheduler();
     panic_unsupported();
 }
