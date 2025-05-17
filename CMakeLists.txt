@@ -60,6 +60,7 @@ target_link_libraries(Tarefa5_MonitoramentoEnchentesFreeRTOS
         hardware_clocks
         hardware_uart
         hardware_pio
+        hardware_pwm
         pico_time
         FreeRTOS-Kernel 
         FreeRTOS-Kernel-Heap4)

@@ -7,6 +7,7 @@
 #include "hardware/i2c.h"
 #include "hardware/uart.h"
 #include "hardware/pio.h"
+#include "hardware/pwm.h"
 #include "pio_matrix.pio.h"
 #include "lib/ssd1306.h"
 #include "lib/font.h"
@@ -35,6 +36,7 @@
 
 #define MATRIX 7 //Pino GPIO da matriz de LEDS
 #define RED_LED 13 //Pino GPIO do Led Vermelho
+#define BUZZER 10// Pino GPIO do Buzzer 
 
 QueueHandle_t xQueueJoystickData; //Definição da Fila para Valores do Joystick
 QueueHandle_t xQueueModeData; //Definição da Fila para Valores do Modo de Operação
@@ -222,9 +224,9 @@ uint32_t matrix_rgb(double r, double g, double b)
 }
 
 /**
- * @brief Task que exibe os alertas visuais (na matriz de LEDS e no LED RGB)
+ * @brief Task que exibe os alertas sonoros e visuais quando identifica o modo de alerta 
  */
-void vVisualAlert()
+void vAlertModeTask()
 {
     /**
      * Inicialização da PIO para utilizar a matriz de LEDS
@@ -233,6 +235,16 @@ void vVisualAlert()
     uint offset = pio_add_program(pio, &pio_matrix_program);
     uint sm = pio_claim_unused_sm(pio, true);
     pio_matrix_program_init(pio, sm, offset, MATRIX);
+
+    /**
+     * Inicializa e Configura o PWM para uso do buzzer 
+     */
+    gpio_set_function(BUZZER, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(BUZZER);
+    pwm_set_clkdiv(slice_num, 62.5f);
+    pwm_set_wrap(slice_num, 1000);
+    pwm_set_gpio_level(BUZZER, 500);
+    pwm_set_enabled(slice_num, false);
     
     /**
      * Inicializa o LED RGB vermelho  
@@ -269,6 +281,9 @@ void vVisualAlert()
 
                 //Liga o LED RGB Vermelho
                 gpio_put(RED_LED, true);
+
+                //Ativa o Buzzer
+                pwm_set_enabled(slice_num, true);
             }else {
                 //Mantém a matriz de Leds apagada caso não esteja no modo de alerta
                 for (int i = 0; i < 25; i++) {
@@ -278,12 +293,14 @@ void vVisualAlert()
 
                 //Desliga o LED RGB Vermelho
                 gpio_put(RED_LED, false);
+                //Desativa o Buzzer
+                pwm_set_enabled(slice_num, false);
+                gpio_put(BUZZER, false); //Garante que o buzzer está em nível baixo
             }
 
             vTaskDelay(pdTICKS_TO_MS(500)); //Atualiza a cada 0.5s
         }//End: queueReceive
     }
-    
 }
 
 int main()
@@ -298,7 +315,7 @@ int main()
     xTaskCreate(vReadJoystickValuesTask, "Read Joystick Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(vMapStatus, "Define Status Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(vRealTimeInfo, "Display Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    xTaskCreate(vVisualAlert, "LEDS Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(vAlertModeTask, "AlertMode Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     vTaskStartScheduler();
     panic_unsupported();
 }
