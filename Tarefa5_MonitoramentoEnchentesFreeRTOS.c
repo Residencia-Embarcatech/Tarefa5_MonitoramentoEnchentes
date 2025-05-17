@@ -187,16 +187,30 @@ void vRealTimeInfo()
                 sprintf(level_river, "%.2f", joystick.river);
                 sprintf(rain_in, "%.2f", joystick.rain);
 
-                ssd1306_fill(&ssd, !cor);                          // Limpa o display
-                ssd1306_rect(&ssd, 3, 3, 122, 60, cor, !cor);      // Desenha um retângulo
-                ssd1306_line(&ssd, 3, 37, 123, 37, cor);           // Desenha uma linha
-                ssd1306_draw_string(&ssd, "status: ", 20, 6);      // Linha 1: label  
-                ssd1306_draw_string(&ssd, mode.status, 68, 6);     // Linha 1: Status atual 
-                ssd1306_draw_string(&ssd, "N Rio: ", 20, 16);      // Linha 2: label
-                ssd1306_draw_string(&ssd, level_river, 60, 16);    // Linha 2: nivel rio atual
-                ssd1306_draw_string(&ssd, "Chuva", 13, 41);        // Desenha uma string
-                ssd1306_draw_string(&ssd, rain_in, 60, 52);        // Desenha uma string
-                ssd1306_send_data(&ssd);                           // Atualiza o display
+                // Limpa o display (preenche com cor inversa)
+                ssd1306_fill(&ssd, !cor);                           
+                // Moldura externa
+                ssd1306_rect(&ssd, 3, 3, 122, 60, cor, !cor);        
+                // Linha abaixo do título "STATUS"
+                ssd1306_line(&ssd, 3, 14, 122, 14, cor);             
+                // Linha abaixo da palavra "PERIGO"
+                ssd1306_line(&ssd, 3, 30, 122, 30, cor);             
+                // Linha horizontal separando as duas linhas da "tabela"
+                ssd1306_line(&ssd, 3, 45, 122, 45, cor);             
+                // Linha vertical da tabela, separando letra e número
+                ssd1306_line(&ssd, 25, 30, 25, 60, cor);             
+                // Texto no topo (status)
+                ssd1306_draw_string(&ssd, "status", 45, 5);          
+                // Palavra que indica o status atual
+                ssd1306_draw_string(&ssd, mode.status, 35, 18);      
+                // Primeira linha da tabela: R e 9.95
+                ssd1306_draw_string(&ssd, "R", 10, 34);              
+                ssd1306_draw_string(&ssd, level_river, 30, 34);      
+                // Segunda linha da tabela: C e 95.5
+                ssd1306_draw_string(&ssd, "C", 10, 49);              
+                ssd1306_draw_string(&ssd, rain_in, 30, 49);          
+                // Atualiza o display
+                ssd1306_send_data(&ssd);
             }else {
                 ssd1306_fill(&ssd, !cor);                          // Limpa o display
                 ssd1306_rect(&ssd, 3, 3, 122, 60, cor, !cor);      // Desenha um retângulo
