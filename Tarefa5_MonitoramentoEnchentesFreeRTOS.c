@@ -218,7 +218,7 @@ void vRealTimeInfo()
 }
 
 /**
- * @brief Função auxiliar para task vVisualAlert()
+ * @brief Função auxiliar para task vAlertModeTask()
  */
 uint32_t matrix_rgb(double r, double g, double b)
 {
