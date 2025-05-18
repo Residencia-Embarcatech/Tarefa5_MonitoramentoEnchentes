@@ -19,14 +19,6 @@
 #define JOYSTICK_Y 27 //Eixo y do Joystick, simula o sensor ultrassônico para medir o nível do rio
 
 /**
- * Definições de status possíveis de acordo com os valores mapeados
- */
-#define ATTENTION 0 //Indica pouco risco de enchete, com o nível do rio um pouco acima do normal.
-#define ALERT 1 //Indica existência do risco de enchete
-#define DANGER 2 //Indica risco de Inundação
-#define SAFE 3 //Sem risco de enchete ou inundação
-
-/**
  * Definições para uso do I2C
  */
 #define I2C_PORT i2c1
@@ -203,10 +195,10 @@ void vRealTimeInfo()
                 ssd1306_draw_string(&ssd, "status", 45, 5);          
                 // Palavra que indica o status atual
                 ssd1306_draw_string(&ssd, mode.status, 35, 18);      
-                // Primeira linha da tabela: R e 9.95
+                // Primeira linha da tabela: R e Valor do nível
                 ssd1306_draw_string(&ssd, "R", 10, 34);              
                 ssd1306_draw_string(&ssd, level_river, 30, 34);      
-                // Segunda linha da tabela: C e 95.5
+                // Segunda linha da tabela: C e valor da intensidade de chuva
                 ssd1306_draw_string(&ssd, "C", 10, 49);              
                 ssd1306_draw_string(&ssd, rain_in, 30, 49);          
                 // Atualiza o display
